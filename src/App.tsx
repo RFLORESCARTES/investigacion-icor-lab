@@ -61,7 +61,7 @@ const EMPTY_PATIENT: PatientRecord = {
   sindrome_craneofacial_e02: '',
   dato_irrecuperable_e04: '',
   adaptacion_intraoperatoria_e05: '',
-  estado: 'PENDIENTE',
+  estado: '',
   motivo_codigo: '',
   observaciones: '',
   ultima_actualizacion: '',
@@ -247,9 +247,10 @@ export default function App() {
         if (surgeryDate && cbctPostDate) {
           const days = calculateDaysBetween(surgeryDate, cbctPostDate);
           updated.dias_qx_cbct_post = days;
-          if (days !== null && !prev.ventana_cbct_post) {
-            updated.ventana_cbct_post = determineCBCTWindow(days);
-          }
+          updated.ventana_cbct_post = determineCBCTWindow(days);
+        } else {
+          updated.dias_qx_cbct_post = null;
+          updated.ventana_cbct_post = '';
         }
       }
 
@@ -292,14 +293,12 @@ export default function App() {
     if (!patient.tipo_osteotomia_maxilar?.trim()) errs.tipo_osteotomia_maxilar = 'Tipo osteotomía requerido';
 
     // Section 3: CBCT Study & Quality
+    if (!patient.cbct_postoperatorio?.trim()) errs.cbct_postoperatorio = 'CBCT post requerido';
     if (!patient.fecha_cbct_pre?.trim()) errs.fecha_cbct_pre = 'Fecha CBCT pre requerida';
     if (!patient.fecha_cbct_post?.trim()) errs.fecha_cbct_post = 'Fecha CBCT post requerida';
-    if (!patient.ventana_cbct_post?.trim()) errs.ventana_cbct_post = 'Ventana CBCT requerida';
-    if (!patient.cbct_postoperatorio?.trim()) errs.cbct_postoperatorio = 'CBCT post requerido';
     if (!patient.mismo_equipo_cbct?.trim()) errs.mismo_equipo_cbct = 'Mismo equipo requerido';
     if (!patient.archivo_cefalometrico_exportable?.trim()) errs.archivo_cefalometrico_exportable = 'Cefalometría requerida';
     if (!patient.coordenadas_3d_exportables?.trim()) errs.coordenadas_3d_exportables = 'Coordenadas 3D requeridas';
-    if (!patient.deltas_calculables?.trim()) errs.deltas_calculables = 'Deltas requeridos';
     if (!patient.calidad_cbct_pre?.trim()) errs.calidad_cbct_pre = 'Calidad pre requerida';
     if (!patient.calidad_cbct_post?.trim()) errs.calidad_cbct_post = 'Calidad post requerida';
     if (!patient.utilidad_rx_estudio?.trim()) errs.utilidad_rx_estudio = 'Utilidad RX requerida';
@@ -315,6 +314,9 @@ export default function App() {
     if (!patient.dato_irrecuperable_e04?.trim()) errs.dato_irrecuperable_e04 = 'E04 requerido';
     if (!patient.adaptacion_intraoperatoria_e05?.trim()) errs.adaptacion_intraoperatoria_e05 = 'E05 requerido';
     if (!patient.estado?.trim()) errs.estado = 'Estado requerido';
+    if (patient.estado === 'EXCLUIDO' && !patient.motivo_codigo?.trim()) {
+      errs.motivo_codigo = 'Motivo de exclusión obligatorio';
+    }
 
     return errs;
   }, [patient]);
@@ -323,9 +325,10 @@ export default function App() {
   const sectionCompletions = useMemo(() => {
     const s1Keys = ['centro', 'fecha_revision', 'revisor_ciego', 'fecha_cirugia', 'cirujano', 'fecha_nacimiento', 'mayor_18', 'sexo'];
     const s2Keys = ['planificacion_digital_completa', 'archivo_planificacion_disponible', 'tipo_cirugia', 'segmentacion_lefort', 'tipo_osteotomia_maxilar'];
-    const s3Keys = ['fecha_cbct_pre', 'fecha_cbct_post', 'ventana_cbct_post', 'cbct_postoperatorio', 'mismo_equipo_cbct', 'archivo_cefalometrico_exportable', 'coordenadas_3d_exportables', 'deltas_calculables', 'calidad_cbct_pre', 'calidad_cbct_post', 'utilidad_rx_estudio', 'tipo_defecto_calidad'];
+    const s3Keys = ['cbct_postoperatorio', 'fecha_cbct_pre', 'fecha_cbct_post', 'mismo_equipo_cbct', 'archivo_cefalometrico_exportable', 'coordenadas_3d_exportables', 'calidad_cbct_pre', 'calidad_cbct_post', 'utilidad_rx_estudio', 'tipo_defecto_calidad'];
     if (patient.tipo_defecto_calidad === 'Otro') s3Keys.push('comentario_calidad');
     const s4Keys = ['cirugia_previa_e01', 'sindrome_craneofacial_e02', 'dato_irrecuperable_e04', 'adaptacion_intraoperatoria_e05', 'estado'];
+    if (patient.estado === 'EXCLUIDO') s4Keys.push('motivo_codigo');
 
     return [
       s1Keys.every(k => !validationErrors[k]),
@@ -333,7 +336,7 @@ export default function App() {
       s3Keys.every(k => !validationErrors[k]),
       s4Keys.every(k => !validationErrors[k]),
     ];
-  }, [validationErrors, patient.tipo_defecto_calidad]);
+  }, [validationErrors, patient.tipo_defecto_calidad, patient.estado]);
 
   // Save / Update Patient
   const handleSave = async () => {
