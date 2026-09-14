@@ -26,7 +26,7 @@ export async function fetchPatientById(id: string): Promise<PatientRecord> {
 
 export async function savePatient(
   patient: PatientRecord,
-  auditMeta?: { reason?: string; supervisorAuthorized?: boolean }
+  auditMeta?: { reason?: string; supervisorAuthorized?: boolean; adminName?: string; scope?: string }
 ): Promise<{ success: boolean; message: string; patient: PatientRecord; sheetsSync?: any }> {
   const res = await fetch(`${BASE_URL}/save`, {
     method: 'POST',
@@ -50,11 +50,14 @@ export async function fetchNextPatientId(): Promise<string> {
   return data.nextId;
 }
 
-export async function verifySupervisorPin(pin: string): Promise<boolean> {
+export async function verifySupervisorPin(
+  pin: string,
+  meta?: { patientId?: string; reason?: string; scope?: string; adminName?: string }
+): Promise<boolean> {
   const res = await fetch(`${BASE_URL}/verify-supervisor`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ pin }),
+    body: JSON.stringify({ pin, ...meta }),
   });
   if (!res.ok) return false;
   const data = await res.json();
