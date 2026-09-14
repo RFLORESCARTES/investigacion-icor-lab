@@ -4,7 +4,6 @@ import {
   CALIDAD_CBCT_OPCIONES,
   UTILIDAD_RX_OPCIONES,
   DEFECTOS_CALIDAD_OPCIONES,
-  VENTANA_CBCT_OPCIONES,
   SI_NO_OPCIONES
 } from '../types/schema';
 import { toInputDateFormat } from '../utils/calculations';
@@ -25,13 +24,34 @@ export const SectionCBCT: React.FC<SectionCBCTProps> = ({
 
   return (
     <div className="space-y-4">
-      {/* Fechas CBCT & Deltas calculados */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5">
-        {/* Fecha CBCT pre */}
+      {/* 1. CBCT Postoperatorio (Sí / No) y Fechas */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5 items-start">
+        {/* CBCT Post Disponible */}
+        <div>
+          <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-700 mb-1.5 truncate">
+            CBCT Postoperatorio {errors.cbct_postoperatorio && <span className="text-rose-500 font-bold">•</span>}
+          </label>
+          <div className="grid grid-cols-2 gap-1.5">
+            {SI_NO_OPCIONES.map((opt) => (
+              <button
+                key={opt}
+                type="button"
+                onClick={() => onChange('cbct_postoperatorio', opt)}
+                className={`py-1.5 text-xs rounded-lg border transition-all cursor-pointer ${getButtonClass(
+                  data.cbct_postoperatorio === opt
+                )}`}
+              >
+                {opt}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Fecha CBCT Pre */}
         <div>
           <div className="flex items-center justify-between mb-1">
             <label className="text-[11px] font-bold uppercase tracking-wider text-slate-600">
-              CBCT Preoperatorio {errors.fecha_cbct_pre && <span className="text-rose-500 font-bold">•</span>}
+              CBCT Pre {errors.fecha_cbct_pre && <span className="text-rose-500 font-bold">•</span>}
             </label>
             {data.dias_cbct_pre_qx !== null && (
               <span className="text-[10px] font-mono bg-slate-100 text-slate-700 px-1.5 py-0.2 rounded border border-slate-200">
@@ -50,11 +70,11 @@ export const SectionCBCT: React.FC<SectionCBCTProps> = ({
           />
         </div>
 
-        {/* Fecha CBCT post */}
+        {/* Fecha CBCT Post */}
         <div>
           <div className="flex items-center justify-between mb-1">
             <label className="text-[11px] font-bold uppercase tracking-wider text-slate-600">
-              CBCT Postoperatorio {errors.fecha_cbct_post && <span className="text-rose-500 font-bold">•</span>}
+              CBCT Post {errors.fecha_cbct_post && <span className="text-rose-500 font-bold">•</span>}
             </label>
             {data.dias_qx_cbct_post !== null && (
               <span className="text-[10px] font-mono bg-slate-100 text-slate-700 px-1.5 py-0.2 rounded border border-slate-200">
@@ -73,50 +93,23 @@ export const SectionCBCT: React.FC<SectionCBCTProps> = ({
           />
         </div>
 
-        {/* Ventana CBCT post */}
+        {/* Ventana CBCT Post (Cálculo Automático) */}
         <div>
           <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-600 mb-1">
-            Ventana Post {errors.ventana_cbct_post && <span className="text-rose-500 font-bold">•</span>}
+            Ventana Post (Auto) {errors.ventana_cbct_post && <span className="text-rose-500 font-bold">•</span>}
           </label>
-          <select
-            value={data.ventana_cbct_post}
-            onChange={(e) => onChange('ventana_cbct_post', e.target.value)}
-            className={`w-full px-2.5 py-1.5 text-xs border rounded-lg outline-none transition-colors ${getInputClass(
-              data.ventana_cbct_post,
-              Boolean(errors.ventana_cbct_post)
-            )}`}
-          >
-            <option value="">Seleccionar ventana...</option>
-            {VENTANA_CBCT_OPCIONES.map((v) => (
-              <option key={v} value={v}>{v}</option>
-            ))}
-          </select>
+          <div className={`px-2.5 py-1.5 text-xs border rounded-lg font-medium flex items-center min-h-[32px] ${
+            data.ventana_cbct_post
+              ? 'bg-slate-100/90 text-slate-900 border-slate-300'
+              : 'bg-slate-50 text-slate-400 border-slate-200 italic'
+          }`}>
+            {data.ventana_cbct_post || 'Cálculo automático...'}
+          </div>
         </div>
       </div>
 
-      {/* 1-Tap Quick Toggles for 3D & Tech Specs */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2.5 pt-1">
-        {/* CBCT Post disponible */}
-        <div>
-          <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-600 mb-1 truncate">
-            CBCT Post {errors.cbct_postoperatorio && <span className="text-rose-500 font-bold">•</span>}
-          </label>
-          <div className="grid grid-cols-2 gap-1">
-            {SI_NO_OPCIONES.map((opt) => (
-              <button
-                key={opt}
-                type="button"
-                onClick={() => onChange('cbct_postoperatorio', opt)}
-                className={`py-1 text-xs rounded border transition-all ${getButtonClass(
-                  data.cbct_postoperatorio === opt
-                )}`}
-              >
-                {opt}
-              </button>
-            ))}
-          </div>
-        </div>
-
+      {/* 2. Factibilidad Técnica & Cefalometría */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 pt-2 border-t border-slate-100">
         {/* Mismo equipo CBCT */}
         <div>
           <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-600 mb-1 truncate">
@@ -128,7 +121,7 @@ export const SectionCBCT: React.FC<SectionCBCTProps> = ({
                 key={opt}
                 type="button"
                 onClick={() => onChange('mismo_equipo_cbct', opt)}
-                className={`py-1 text-xs rounded border transition-all ${getButtonClass(
+                className={`py-1 text-xs rounded border transition-all cursor-pointer ${getButtonClass(
                   data.mismo_equipo_cbct === opt
                 )}`}
               >
@@ -149,7 +142,7 @@ export const SectionCBCT: React.FC<SectionCBCTProps> = ({
                 key={opt}
                 type="button"
                 onClick={() => onChange('archivo_cefalometrico_exportable', opt)}
-                className={`py-1 text-xs rounded border transition-all ${getButtonClass(
+                className={`py-1 text-xs rounded border transition-all cursor-pointer ${getButtonClass(
                   data.archivo_cefalometrico_exportable === opt
                 )}`}
               >
@@ -170,29 +163,8 @@ export const SectionCBCT: React.FC<SectionCBCTProps> = ({
                 key={opt}
                 type="button"
                 onClick={() => onChange('coordenadas_3d_exportables', opt)}
-                className={`py-1 text-xs rounded border transition-all ${getButtonClass(
+                className={`py-1 text-xs rounded border transition-all cursor-pointer ${getButtonClass(
                   data.coordenadas_3d_exportables === opt
-                )}`}
-              >
-                {opt}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* Deltas calculables */}
-        <div className="col-span-2 sm:col-span-1">
-          <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-600 mb-1 truncate">
-            Deltas Plan/Post {errors.deltas_calculables && <span className="text-rose-500 font-bold">•</span>}
-          </label>
-          <div className="grid grid-cols-2 gap-1">
-            {SI_NO_OPCIONES.map((opt) => (
-              <button
-                key={opt}
-                type="button"
-                onClick={() => onChange('deltas_calculables', opt)}
-                className={`py-1 text-xs rounded border transition-all ${getButtonClass(
-                  data.deltas_calculables === opt
                 )}`}
               >
                 {opt}
@@ -202,7 +174,7 @@ export const SectionCBCT: React.FC<SectionCBCTProps> = ({
         </div>
       </div>
 
-      {/* Evaluación Cualitativa y Defectos */}
+      {/* 3. Evaluación Cualitativa y Defectos */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5 pt-2 border-t border-slate-100">
         {/* Calidad CBCT pre */}
         <div>
