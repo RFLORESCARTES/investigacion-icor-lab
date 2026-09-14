@@ -84,11 +84,15 @@ function patientToRow(patient) {
 
 function cleanPrivateKey(rawKey) {
   if (!rawKey) return '';
-  let key = rawKey.trim();
-  if ((key.startsWith('"') && key.endsWith('"')) || (key.startsWith("'") && key.endsWith("'"))) {
-    key = key.substring(1, key.length - 1);
+  let key = String(rawKey).trim();
+  if (key.startsWith('"') && key.endsWith('"')) {
+    try {
+      key = JSON.parse(key);
+    } catch {
+      key = key.slice(1, -1);
+    }
   }
-  key = key.replace(/\\n/g, '\n').replace(/\r/g, '');
+  key = key.replace(/\\n/g, '\n').replace(/\r/g, '').trim();
   return key;
 }
 
@@ -104,9 +108,11 @@ async function syncRowToGoogleSheets(patient, auditEntry) {
   }
 
   try {
-    const auth = new google.auth.JWT({
-      email: clientEmail,
-      key: privateKey,
+    const auth = new google.auth.GoogleAuth({
+      credentials: {
+        client_email: clientEmail,
+        private_key: privateKey,
+      },
       scopes: ['https://www.googleapis.com/auth/spreadsheets'],
     });
 
