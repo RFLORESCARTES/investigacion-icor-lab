@@ -21,19 +21,15 @@ app.use(express.json({ limit: '10mb' }));
 let patientsCache = [];
 let auditLogsCache = [];
 
-// Seed data fallback
-const INITIAL_DATA_FILE = path.join(__dirname, '..', 'server', 'initialData.json');
-
-function loadData() {
-  try {
-    if (fs.existsSync(INITIAL_DATA_FILE)) {
-      patientsCache = JSON.parse(fs.readFileSync(INITIAL_DATA_FILE, 'utf-8'));
-    }
-  } catch (err) {
-    console.error('Error loading initial data:', err);
+// Load seed data
+try {
+  const seedPath = path.join(__dirname, 'initialData.json');
+  if (fs.existsSync(seedPath)) {
+    patientsCache = JSON.parse(fs.readFileSync(seedPath, 'utf-8'));
   }
+} catch (err) {
+  console.error('Error loading seed data:', err);
 }
-loadData();
 
 const SHEET_COLUMNS = [
   { key: 'id_paciente', header: 'ID paciente' },
