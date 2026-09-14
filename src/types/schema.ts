@@ -66,7 +66,7 @@ export const SEXO_OPCIONES = ['Masculino', 'Femenino'];
 export const SI_NO_OPCIONES = ['Sí', 'No'];
 export const TIPO_CIRUGIA_OPCIONES = ['LE FORT 1', 'BIMAXILAR'];
 export const TIPO_OSTEOTOMIA_OPCIONES = ['Clásico', 'Segmentada 2 piezas', 'Segmentada 3 piezas', 'Segmentada 4 piezas', 'No aplica', 'Otro'];
-export const CALIDAD_CBCT_OPCIONES = ['Satisfactoria', 'Óptima', 'Aceptable', 'Deficiente'];
+export const CALIDAD_CBCT_OPCIONES = ['OPTIMA', 'ACEPTABLE', 'DEFICIENTE'];
 export const UTILIDAD_RX_OPCIONES = ['Buena', 'Aceptable', 'Deficiente', 'Sí', 'No'];
 export const DEFECTOS_CALIDAD_OPCIONES = ['Sin observaciones', 'Movimiento', 'Artefacto metálico', 'FOV incompleto', 'Baja resolución', 'Otro'];
 export const VENTANA_CBCT_OPCIONES = ['Principal (<=2 sem)', 'Secundaria (2-6 sem)', 'Tardía (>6 sem)', 'Fuera de rango'];
