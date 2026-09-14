@@ -82,12 +82,22 @@ function patientToRow(patient) {
   });
 }
 
+function cleanPrivateKey(rawKey) {
+  if (!rawKey) return '';
+  let key = rawKey.trim();
+  if ((key.startsWith('"') && key.endsWith('"')) || (key.startsWith("'") && key.endsWith("'"))) {
+    key = key.substring(1, key.length - 1);
+  }
+  key = key.replace(/\\n/g, '\n').replace(/\r/g, '');
+  return key;
+}
+
 async function syncRowToGoogleSheets(patient, auditEntry) {
   const spreadsheetId = process.env.GOOGLE_SPREADSHEET_ID || '1xndhpqcFjHxWzCcz9xv2597ZV180HNekDfwY7Of87ak';
   const sheetName = process.env.GOOGLE_SHEET_NAME || 'Base_Maestra';
   const auditSheetName = 'Log_Auditoria';
-  const clientEmail = process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL;
-  const privateKey = process.env.GOOGLE_PRIVATE_KEY?.replace(/\\n/g, '\n');
+  const clientEmail = process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL?.trim();
+  const privateKey = cleanPrivateKey(process.env.GOOGLE_PRIVATE_KEY);
 
   if (!clientEmail || !privateKey) {
     return { synced: false, reason: 'Modo Local (Sin credenciales en .env).' };
