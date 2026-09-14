@@ -1,0 +1,70 @@
+[
+  {
+    "id": "LOG_1788810077164",
+    "timestamp": "2026-09-07T19:41:17.164Z",
+    "id_paciente": "PCO005",
+    "revisor": "Alfa",
+    "motivo": "Actualización de fecha de pabellón según epicrisis física",
+    "cambios": [
+      {
+        "campo": "centro",
+        "valor_anterior": "ICOR",
+        "valor_nuevo": "Hospital Clínico"
+      },
+      {
+        "campo": "fecha_cirugia",
+        "valor_anterior": "2026-04-10",
+        "valor_nuevo": "2026-04-12"
+      },
+      {
+        "campo": "dias_cbct_pre_qx",
+        "valor_anterior": 21,
+        "valor_nuevo": 23
+      },
+      {
+        "campo": "dias_qx_cbct_post",
+        "valor_anterior": 10,
+        "valor_nuevo": 8
+      },
+      {
+        "campo": "observaciones",
+        "valor_anterior": "Ficha inicial confirmada en prueba E2E.",
+        "valor_nuevo": "Modificación con motivo auditado."
+      }
+    ]
+  },
+  {
+    "id": "LOG_1788808051888",
+    "timestamp": "2026-09-07T19:07:31.888Z",
+    "id_paciente": "PCO002",
+    "revisor": "Beta",
+    "motivo": "Ajuste de fecha de cirugía según protocolo de pabellón",
+    "cambios": [
+      {
+        "campo": "centro",
+        "valor_anterior": "Centro B",
+        "valor_nuevo": "Centro B Modificado"
+      },
+      {
+        "campo": "fecha_cirugia",
+        "valor_anterior": "2026-08-15",
+        "valor_nuevo": "2026-08-16"
+      },
+      {
+        "campo": "dias_cbct_pre_qx",
+        "valor_anterior": 14,
+        "valor_nuevo": 15
+      },
+      {
+        "campo": "dias_qx_cbct_post",
+        "valor_anterior": 10,
+        "valor_nuevo": 9
+      },
+      {
+        "campo": "observaciones",
+        "valor_anterior": "Test automated save verification passed.",
+        "valor_nuevo": "Ficha modificada con autorización de supervisor."
+      }
+    ]
+  }
+]
