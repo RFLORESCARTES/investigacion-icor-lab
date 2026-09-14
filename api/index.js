@@ -82,18 +82,22 @@ function patientToRow(patient) {
   });
 }
 
-function cleanPrivateKey(rawKey) {
-  if (!rawKey) return '';
-  let key = String(rawKey).trim();
-  if (key.startsWith('"') && key.endsWith('"')) {
-    try {
-      key = JSON.parse(key);
-    } catch {
-      key = key.slice(1, -1);
-    }
+function formatPEM(raw) {
+  if (!raw) return '';
+  let str = String(raw).trim();
+  if (str.startsWith('"') && str.endsWith('"')) {
+    try { str = JSON.parse(str); } catch { str = str.slice(1, -1); }
   }
-  key = key.replace(/\\n/g, '\n').replace(/\r/g, '').trim();
-  return key;
+  str = str.replace(/\\n/g, '\n').replace(/\r/g, '').trim();
+
+  const lines = str.split('\n').map(l => l.trim()).filter(Boolean);
+  const bodyLines = lines.filter(l => !l.startsWith('-----'));
+  const fullBase64 = bodyLines.join('').replace(/\s+/g, '');
+
+  if (!fullBase64) return str;
+
+  const chunks = fullBase64.match(/.{1,64}/g) || [fullBase64];
+  return `-----BEGIN PRIVATE KEY-----\n${chunks.join('\n')}\n-----END PRIVATE KEY-----\n`;
 }
 
 async function syncRowToGoogleSheets(patient, auditEntry) {
@@ -101,7 +105,7 @@ async function syncRowToGoogleSheets(patient, auditEntry) {
   const sheetName = process.env.GOOGLE_SHEET_NAME || 'Base_Maestra';
   const auditSheetName = 'Log_Auditoria';
   const clientEmail = process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL?.trim();
-  const privateKey = cleanPrivateKey(process.env.GOOGLE_PRIVATE_KEY);
+  const privateKey = formatPEM(process.env.GOOGLE_PRIVATE_KEY);
 
   if (!clientEmail || !privateKey) {
     return { synced: false, reason: 'Modo Local (Sin credenciales en .env).' };
