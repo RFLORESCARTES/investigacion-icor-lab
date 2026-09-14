@@ -172,7 +172,7 @@ export const SectionDemographics: React.FC<SectionDemographicsProps> = ({
           <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-600 mb-1">
             Sexo Biológico {errors.sexo && <span className="text-rose-500 font-bold">•</span>}
           </label>
-          <div className="grid grid-cols-3 gap-1.5">
+          <div className="grid grid-cols-2 gap-1.5">
             {SEXO_OPCIONES.map((s) => (
               <button
                 key={s}
@@ -182,7 +182,7 @@ export const SectionDemographics: React.FC<SectionDemographicsProps> = ({
                   data.sexo === s
                 )}`}
               >
-                {s === 'M' ? 'M (Masc)' : s === 'F' ? 'F (Fem)' : 'Otro'}
+                {s}
               </button>
             ))}
           </div>
