@@ -232,6 +232,53 @@ app.get('/api/audit-logs', (req, res) => {
   res.json(auditLogsCache);
 });
 
+app.get('/api/sheet-headers', async (req, res) => {
+  const spreadsheetId = process.env.GOOGLE_SPREADSHEET_ID || '1xndhpqcFjHxWzCcz9xv2597ZV180HNekDfwY7Of87ak';
+  const sheetName = process.env.GOOGLE_SHEET_NAME || 'Base_Maestra';
+  const clientEmail = process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL?.trim();
+  const privateKey = formatPEM(process.env.GOOGLE_PRIVATE_KEY);
+
+  if (!clientEmail || !privateKey) {
+    return res.status(500).json({ error: 'No credentials configured' });
+  }
+
+  try {
+    const auth = new google.auth.GoogleAuth({
+      credentials: { client_email: clientEmail, private_key: privateKey },
+      scopes: ['https://www.googleapis.com/auth/spreadsheets.readonly'],
+    });
+    const sheets = google.sheets({ version: 'v4', auth });
+    const response = await sheets.spreadsheets.values.get({
+      spreadsheetId,
+      range: `'${sheetName}'!1:1`,
+    });
+    const headers = response.data.values ? response.data.values[0] : [];
+    
+    // Compare with SHEET_COLUMNS
+    const comparison = SHEET_COLUMNS.map((col, idx) => {
+      const sheetHeader = headers[idx] || '(VACÍO / NO EXISTE)';
+      const isExact = col.header.trim().toLowerCase() === sheetHeader.trim().toLowerCase();
+      return {
+        colIndex: idx + 1,
+        key: col.key,
+        softwareHeader: col.header,
+        sheetHeader,
+        match: isExact,
+      };
+    });
+
+    res.json({
+      totalSheetColumns: headers.length,
+      totalCodeColumns: SHEET_COLUMNS.length,
+      allMatch: comparison.every(c => c.match),
+      headers,
+      comparison,
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 app.get('/api/stats', (req, res) => {
   const total = patientsCache.length;
   const elegibles = patientsCache.filter(p => p.estado === 'ELEGIBLE').length;
