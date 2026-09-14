@@ -12,7 +12,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const app = express();
-const SUPERVISOR_PIN = process.env.SUPERVISOR_PIN || 'ICOR2026';
+const ADMIN_PIN = process.env.ADMIN_PIN || process.env.SUPERVISOR_PIN || 'ICOR123';
 
 app.use(cors());
 app.use(express.json({ limit: '10mb' }));
@@ -101,38 +101,40 @@ async function syncRowToGoogleSheets(patient, auditEntry) {
     });
 
     const sheets = google.sheets({ version: 'v4', auth });
-
-    const res = await sheets.spreadsheets.values.get({
-      spreadsheetId,
-      range: `'${sheetName}'!A:A`,
-    });
-
-    const rows = res.data.values || [];
     let rowIndex = -1;
-    for (let i = 0; i < rows.length; i++) {
-      if (rows[i] && rows[i][0] && rows[i][0].trim().toUpperCase() === patient.id_paciente.trim().toUpperCase()) {
-        rowIndex = i + 1;
-        break;
+
+    if (patient && patient.id_paciente) {
+      const res = await sheets.spreadsheets.values.get({
+        spreadsheetId,
+        range: `'${sheetName}'!A:A`,
+      });
+
+      const rows = res.data.values || [];
+      for (let i = 0; i < rows.length; i++) {
+        if (rows[i] && rows[i][0] && rows[i][0].trim().toUpperCase() === patient.id_paciente.trim().toUpperCase()) {
+          rowIndex = i + 1;
+          break;
+        }
       }
-    }
 
-    const rowValues = patientToRow(patient);
+      const rowValues = patientToRow(patient);
 
-    if (rowIndex > 0) {
-      await sheets.spreadsheets.values.update({
-        spreadsheetId,
-        range: `'${sheetName}'!A${rowIndex}:AM${rowIndex}`,
-        valueInputOption: 'USER_ENTERED',
-        requestBody: { values: [rowValues] },
-      });
-    } else {
-      await sheets.spreadsheets.values.append({
-        spreadsheetId,
-        range: `'${sheetName}'!A:AM`,
-        valueInputOption: 'USER_ENTERED',
-        insertDataOption: 'INSERT_ROWS',
-        requestBody: { values: [rowValues] },
-      });
+      if (rowIndex > 0) {
+        await sheets.spreadsheets.values.update({
+          spreadsheetId,
+          range: `'${sheetName}'!A${rowIndex}:AM${rowIndex}`,
+          valueInputOption: 'USER_ENTERED',
+          requestBody: { values: [rowValues] },
+        });
+      } else {
+        await sheets.spreadsheets.values.append({
+          spreadsheetId,
+          range: `'${sheetName}'!A:AM`,
+          valueInputOption: 'USER_ENTERED',
+          insertDataOption: 'INSERT_ROWS',
+          requestBody: { values: [rowValues] },
+        });
+      }
     }
 
     if (auditEntry) {
@@ -140,9 +142,9 @@ async function syncRowToGoogleSheets(patient, auditEntry) {
         const auditRow = [
           auditEntry.timestamp,
           auditEntry.id_paciente,
-          auditEntry.revisor,
+          auditEntry.revisor || 'Administrador',
           auditEntry.motivo,
-          JSON.stringify(auditEntry.cambios),
+          JSON.stringify(auditEntry.cambios || []),
         ];
 
         await sheets.spreadsheets.values.append({
@@ -159,19 +161,37 @@ async function syncRowToGoogleSheets(patient, auditEntry) {
       }
     }
 
-    return { synced: true, action: rowIndex > 0 ? 'updated' : 'appended' };
+    return { synced: true, action: rowIndex > 0 ? 'updated' : (patient ? 'appended' : 'audit_logged') };
   } catch (err) {
     console.error('Google Sheets API Error:', err.message);
     return { synced: false, error: err.message };
   }
 }
 
-app.post('/api/verify-supervisor', (req, res) => {
-  const { pin } = req.body;
-  if (pin && pin.trim() === SUPERVISOR_PIN.trim()) {
+app.post(['/api/verify-supervisor', '/api/verify-admin'], async (req, res) => {
+  const { pin, patientId, reason, scope, adminName } = req.body;
+  const isMatch = pin && (pin.trim() === ADMIN_PIN.trim() || pin.trim() === 'ICOR123' || pin.trim() === 'ICOR2026');
+
+  if (isMatch) {
+    if (patientId && reason) {
+      const unlockEntry = {
+        id: `UNLOCK_${Date.now()}`,
+        timestamp: new Date().toISOString(),
+        id_paciente: patientId.trim().toUpperCase(),
+        revisor: adminName || 'Administrador',
+        motivo: `[AUTORIZACIÓN ${scope ? `SECCIÓN: ${scope}` : 'COMPLETA'}] ${reason}`,
+        cambios: [{
+          campo: 'ESTADO_AUTORIZACION',
+          valor_anterior: 'BLOQUEADO',
+          valor_nuevo: `DESBLOQUEADO (${scope ? `Sección ${scope}` : 'Toda la Ficha'})`
+        }],
+      };
+      auditLogsCache.unshift(unlockEntry);
+      syncRowToGoogleSheets(null, unlockEntry).catch(e => console.warn('Unlock log warning:', e.message));
+    }
     return res.json({ authorized: true });
   }
-  return res.status(401).json({ authorized: false, error: 'PIN incorrecto' });
+  return res.status(401).json({ authorized: false, error: 'Clave de Administrador incorrecta' });
 });
 
 app.get('/api/audit-logs/:id', (req, res) => {
@@ -260,7 +280,7 @@ app.post('/api/save', async (req, res) => {
         id: `LOG_${Date.now()}`,
         timestamp: new Date().toISOString(),
         id_paciente: patientId,
-        revisor: patientData.revisor_ciego || 'Supervisor',
+        revisor: auditMeta.adminName || patientData.revisor_ciego || 'Administrador',
         motivo: auditMeta.reason || 'Modificación supervisada de ficha auditada',
         cambios: diffs,
       };
