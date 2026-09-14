@@ -90,17 +90,21 @@ function formatPEM(raw) {
   }
   str = str.replace(/\\n/g, '\n').replace(/\r/g, '').trim();
 
-  const isRSA = str.includes('RSA PRIVATE KEY');
-  const header = isRSA ? 'RSA PRIVATE KEY' : 'PRIVATE KEY';
-
   const lines = str.split('\n').map(l => l.trim()).filter(Boolean);
   const bodyLines = lines.filter(l => !l.startsWith('-----'));
-  const fullBase64 = bodyLines.join('').replace(/\s+/g, '');
+  let fullBase64 = bodyLines.join('').replace(/\s+/g, '');
+
+  const miiIdx = fullBase64.indexOf('MII');
+  if (miiIdx > 0 && miiIdx <= 10) {
+    fullBase64 = fullBase64.substring(miiIdx);
+  }
+
+  fullBase64 = fullBase64.replace(/[^A-Za-z0-9+/=]/g, '');
 
   if (!fullBase64) return str;
 
   const chunks = fullBase64.match(/.{1,64}/g) || [fullBase64];
-  return `-----BEGIN ${header}-----\n${chunks.join('\n')}\n-----END ${header}-----\n`;
+  return `-----BEGIN PRIVATE KEY-----\n${chunks.join('\n')}\n-----END PRIVATE KEY-----\n`;
 }
 
 async function syncRowToGoogleSheets(patient, auditEntry) {
