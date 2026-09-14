@@ -1,12 +1,12 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { Lock, Unlock, History, AlertTriangle, ShieldCheck } from 'lucide-react';
+import { Lock, Unlock, History, AlertTriangle, ShieldCheck, Layers, UserCheck } from 'lucide-react';
 import { HeaderBar } from './components/HeaderBar';
 import { SectionDemographics } from './components/SectionDemographics';
 import { SectionSurgical } from './components/SectionSurgical';
 import { SectionCBCT } from './components/SectionCBCT';
 import { SectionExclusions } from './components/SectionExclusions';
 import { ValidationSummary } from './components/ValidationSummary';
-import { SupervisorUnlockModal } from './components/SupervisorUnlockModal';
+import { SupervisorUnlockModal, UnlockPayload, UnlockScopeType } from './components/SupervisorUnlockModal';
 import { AuditLogModal, AuditLogEntry } from './components/AuditLogModal';
 import { PatientRecord, PatientSummary, StatsResponse } from './types/schema';
 import {
@@ -78,12 +78,32 @@ export default function App() {
   const [isDraftSaved, setIsDraftSaved] = useState<boolean>(false);
   const [saveMessage, setSaveMessage] = useState<{ type: 'success' | 'error'; text: string; sheetsSync?: any } | null>(null);
 
-  // Supervisor & Audit state
+  // Admin & Audit state
   const [isLocked, setIsLocked] = useState<boolean>(false);
+  const [unlockedScope, setUnlockedScope] = useState<UnlockScopeType>('ALL');
+  const [adminName, setAdminName] = useState<string>('Administrador');
   const [isUnlockModalOpen, setIsUnlockModalOpen] = useState<boolean>(false);
   const [isAuditModalOpen, setIsAuditModalOpen] = useState<boolean>(false);
   const [auditLogs, setAuditLogs] = useState<AuditLogEntry[]>([]);
   const [modificationReason, setModificationReason] = useState<string>('');
+
+  // Helper to determine field section
+  const getSectionForField = (field: keyof PatientRecord): number => {
+    const s0 = ['centro', 'fecha_revision', 'revisor_ciego', 'fecha_cirugia', 'cirujano', 'fecha_nacimiento', 'edad', 'mayor_18', 'sexo'];
+    const s1 = ['planificacion_digital_completa', 'archivo_planificacion_disponible', 'tipo_cirugia', 'segmentacion_lefort', 'tipo_osteotomia_maxilar'];
+    const s2 = ['cbct_postoperatorio', 'fecha_cbct_pre', 'dias_cbct_pre_qx', 'fecha_cbct_post', 'dias_qx_cbct_post', 'ventana_cbct_post', 'mismo_equipo_cbct', 'archivo_cefalometrico_exportable', 'coordenadas_3d_exportables', 'calidad_cbct_pre', 'calidad_cbct_post', 'utilidad_rx_estudio', 'tipo_defecto_calidad', 'comentario_calidad'];
+    if (s0.includes(field)) return 0;
+    if (s1.includes(field)) return 1;
+    if (s2.includes(field)) return 2;
+    return 3;
+  };
+
+  const isSectionLocked = (sectionIndex: number): boolean => {
+    if (!isLocked) return false;
+    if (unlockedScope === 'ALL') return false;
+    if (unlockedScope === sectionIndex) return false;
+    return true;
+  };
 
   // Load draft from localStorage if available
   const getDraft = (id: string): PatientRecord | null => {
@@ -97,7 +117,7 @@ export default function App() {
   };
 
   const saveDraft = (record: PatientRecord) => {
-    if (!record.id_paciente || isLocked) return;
+    if (!record.id_paciente) return;
     try {
       localStorage.setItem(`icor_draft_${record.id_paciente.toUpperCase()}`, JSON.stringify(record));
       setIsDraftSaved(true);
@@ -131,6 +151,7 @@ export default function App() {
         setIsReviewed(Boolean(initialRecord.confirmado));
         setIsDraftSaved(Boolean(localDraft));
         setIsLocked(Boolean(fullPatient.confirmado));
+        setUnlockedScope('ALL');
         setModificationReason('');
       }
     } catch (err: any) {
@@ -157,6 +178,7 @@ export default function App() {
       setIsReviewed(Boolean(activeRecord.confirmado));
       setIsDraftSaved(Boolean(localDraft));
       setIsLocked(Boolean(fullPatient.confirmado));
+      setUnlockedScope('ALL');
       setModificationReason('');
     } catch (err: any) {
       console.error('Error selecting patient:', err);
@@ -181,6 +203,7 @@ export default function App() {
       setIsReviewed(false);
       setIsDraftSaved(false);
       setIsLocked(false);
+      setUnlockedScope('ALL');
       setModificationReason('');
       setActiveTab(0);
     } catch (err: any) {
@@ -202,24 +225,47 @@ export default function App() {
     }
   };
 
-  // Handle unlock authorization
-  const handleSupervisorUnlock = async (pin: string, reason: string): Promise<boolean> => {
-    const isAuthorized = await verifySupervisorPin(pin);
+  // Handle administrator unlock authorization
+  const handleSupervisorUnlock = async (payload: UnlockPayload): Promise<boolean> => {
+    const scopeLabel = payload.scope === 'ALL'
+      ? 'Toda la Ficha'
+      : `Sección ${Number(payload.scope) + 1}`;
+
+    const isAuthorized = await verifySupervisorPin(payload.pin, {
+      patientId: patient.id_paciente,
+      reason: payload.reason,
+      scope: scopeLabel,
+      adminName: payload.adminName,
+    });
+
     if (isAuthorized) {
       setIsLocked(false);
-      setModificationReason(reason);
+      setUnlockedScope(payload.scope);
+      setAdminName(payload.adminName);
+      setModificationReason(payload.reason);
       setSaveMessage({
         type: 'success',
-        text: `Ficha desbloqueada por supervisor. Motivo registrado: "${reason}"`,
+        text: `Autorización de Administrador concedida (${scopeLabel}). Intromisión registrada con fecha y hora.`,
       });
       return true;
     }
     return false;
   };
 
+  // Lock ficha manually
+  const handleLockFicha = () => {
+    setIsLocked(true);
+    setModificationReason('');
+    setSaveMessage({
+      type: 'success',
+      text: 'Ficha bloqueada en modo auditoría (solo lectura).',
+    });
+  };
+
   // Handle field change with reactive recalculations & local draft auto-save
   const handleFieldChange = (field: keyof PatientRecord, value: any) => {
-    if (isLocked) return;
+    const sec = getSectionForField(field);
+    if (isSectionLocked(sec)) return;
 
     setPatient((prev) => {
       const updated: PatientRecord = { ...prev, [field]: value };
@@ -343,7 +389,7 @@ export default function App() {
     if (isLocked) {
       setSaveMessage({
         type: 'error',
-        text: 'La ficha está bloqueada. Debe solicitar desbloqueo con PIN de supervisor para editar.',
+        text: 'La ficha está bloqueada. Debe solicitar desbloqueo con clave de Administrador para editar.',
       });
       return;
     }
@@ -372,15 +418,20 @@ export default function App() {
         confirmado: true,
       };
 
+      const scopeLabel = unlockedScope === 'ALL' ? 'Toda la Ficha' : `Sección ${Number(unlockedScope) + 1}`;
+
       const result = await savePatient(payload, {
-        reason: modificationReason || 'Ingreso y confirmación de ficha clínica',
+        reason: modificationReason ? `[Modificación ${scopeLabel}] ${modificationReason}` : 'Ingreso y confirmación de ficha clínica',
         supervisorAuthorized: Boolean(modificationReason),
+        adminName: adminName || 'Administrador',
+        scope: scopeLabel,
       });
 
       setPatient(result.patient);
       clearDraft(result.patient.id_paciente);
       setIsDraftSaved(false);
       setIsLocked(true); // Re-lock after successful save
+      setUnlockedScope('ALL');
       setModificationReason('');
 
       setSaveMessage({
@@ -432,7 +483,10 @@ export default function App() {
               </span>
             ) : (
               <span className="flex items-center gap-1.5 font-semibold text-emerald-800">
-                <Unlock className="w-3.5 h-3.5 text-emerald-600" /> Edición Habilitada {modificationReason && `• ${modificationReason}`}
+                <Unlock className="w-3.5 h-3.5 text-emerald-600" /> Edición de Administrador Activa {modificationReason && `• ${modificationReason}`}
+                <span className="text-[10px] font-mono bg-emerald-100 text-emerald-900 px-1.5 py-0.5 rounded border border-emerald-200">
+                  {unlockedScope === 'ALL' ? 'Alcance: Ficha Completa' : `Alcance: Sección ${Number(unlockedScope) + 1}`}
+                </span>
               </span>
             )}
           </div>
@@ -448,15 +502,24 @@ export default function App() {
               <span>Ver Historial</span>
             </button>
 
-            {/* Unlock button if locked */}
-            {isLocked && (
+            {/* Unlock / Re-lock button */}
+            {isLocked ? (
               <button
                 type="button"
                 onClick={() => setIsUnlockModalOpen(true)}
-                className="flex items-center space-x-1 px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-white rounded-lg transition-all cursor-pointer font-medium"
+                className="flex items-center space-x-1.5 px-3 py-1 bg-slate-900 hover:bg-slate-800 text-white rounded-lg transition-all cursor-pointer font-semibold shadow-sm"
               >
-                <Unlock className="w-3.5 h-3.5" />
-                <span>Desbloquear (Supervisor)</span>
+                <Unlock className="w-3.5 h-3.5 text-amber-400" />
+                <span>Autorizar (Administrador)</span>
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={handleLockFicha}
+                className="flex items-center space-x-1 px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg transition-colors border border-slate-200 cursor-pointer font-medium text-xs"
+              >
+                <Lock className="w-3.5 h-3.5" />
+                <span>Bloquear Ficha</span>
               </button>
             )}
           </div>
@@ -466,6 +529,7 @@ export default function App() {
         <div className="flex overflow-x-auto gap-1 bg-slate-200/70 p-1 rounded-xl scrollbar-none">
           {tabs.map((tab) => {
             const isActive = activeTab === tab.id;
+            const tabLocked = isSectionLocked(tab.id);
             return (
               <button
                 key={tab.id}
@@ -478,9 +542,11 @@ export default function App() {
                 }`}
               >
                 <span>{tab.label}</span>
-                {tab.isComplete ? (
+                {tabLocked && <Lock className="w-2.5 h-2.5 text-slate-400" />}
+                {!tabLocked && tab.isComplete && (
                   <span className="text-[11px] text-emerald-600 font-bold">✓</span>
-                ) : (
+                )}
+                {!tabLocked && !tab.isComplete && (
                   <span className="w-1.5 h-1.5 rounded-full bg-slate-400"></span>
                 )}
               </button>
@@ -488,8 +554,8 @@ export default function App() {
           })}
         </div>
 
-        {/* Content Box (with optional disabled overlay when locked) */}
-        <div className={`bg-white border border-slate-200 rounded-xl p-4 sm:p-5 shadow-sm relative ${isLocked ? 'opacity-90' : ''}`}>
+        {/* Content Box */}
+        <div className="bg-white border border-slate-200 rounded-xl p-4 sm:p-5 shadow-sm relative">
           {isLoading && (
             <div className="py-12 text-center text-xs text-slate-500 flex items-center justify-center gap-2">
               <div className="w-4 h-4 border-2 border-slate-700 border-t-transparent rounded-full animate-spin"></div>
@@ -497,8 +563,25 @@ export default function App() {
             </div>
           )}
 
+          {/* Section Locked Banner */}
+          {!isLoading && isSectionLocked(activeTab) && (
+            <div className="mb-4 p-3 bg-amber-50 border border-amber-200 rounded-xl text-xs flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 text-amber-900">
+              <div className="flex items-center gap-2">
+                <Lock className="w-4 h-4 text-amber-600 shrink-0" />
+                <span>Esta sección se encuentra <strong>bloqueada en modo solo lectura</strong>. Para editarla, se requiere autorización de Administrador.</span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsUnlockModalOpen(true)}
+                className="px-3 py-1 bg-slate-900 text-white rounded-lg font-semibold hover:bg-slate-800 transition-all cursor-pointer text-xs shrink-0"
+              >
+                Autorizar Sección
+              </button>
+            </div>
+          )}
+
           {!isLoading && activeTab === 0 && (
-            <fieldset disabled={isLocked} className="space-y-4">
+            <fieldset disabled={isSectionLocked(0)} className="space-y-4">
               <SectionDemographics
                 data={patient}
                 onChange={handleFieldChange}
@@ -508,7 +591,7 @@ export default function App() {
           )}
 
           {!isLoading && activeTab === 1 && (
-            <fieldset disabled={isLocked} className="space-y-4">
+            <fieldset disabled={isSectionLocked(1)} className="space-y-4">
               <SectionSurgical
                 data={patient}
                 onChange={handleFieldChange}
@@ -518,7 +601,7 @@ export default function App() {
           )}
 
           {!isLoading && activeTab === 2 && (
-            <fieldset disabled={isLocked} className="space-y-4">
+            <fieldset disabled={isSectionLocked(2)} className="space-y-4">
               <SectionCBCT
                 data={patient}
                 onChange={handleFieldChange}
@@ -528,7 +611,7 @@ export default function App() {
           )}
 
           {!isLoading && activeTab === 3 && (
-            <fieldset disabled={isLocked} className="space-y-4">
+            <fieldset disabled={isSectionLocked(3)} className="space-y-4">
               <SectionExclusions
                 data={patient}
                 onChange={handleFieldChange}
@@ -574,7 +657,7 @@ export default function App() {
         />
       </main>
 
-      {/* Supervisor Unlock Modal */}
+      {/* Admin Unlock Modal */}
       <SupervisorUnlockModal
         isOpen={isUnlockModalOpen}
         patientId={patient.id_paciente}
