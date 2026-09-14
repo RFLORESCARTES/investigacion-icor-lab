@@ -59,12 +59,12 @@ export interface StatsResponse {
   googleSheetsConnected: boolean;
 }
 
-export const CENTROS_OPCIONES = ['ICOR', 'Centro A', 'Centro B', 'Hospital Clínico', 'Clínica Alemana', 'Clínica Las Condes', 'Otro'];
+export const CENTROS_OPCIONES = ['ICOR', 'CLINICA UANDES'];
 export const REVISORES_OPCIONES = ['Alfa', 'Beta', 'Gamma', 'Delta', 'Revisor 1', 'Revisor 2'];
-export const CIRUJANOS_OPCIONES = ['Quevedo L', 'Dr. Pérez', 'Dra. González', 'Dr. Martínez', 'Dr. Silva', 'Otro'];
-export const SEXO_OPCIONES = ['M', 'F', 'Otro'];
+export const CIRUJANOS_OPCIONES = ['L QUEVEDO', 'C QUEVEDO'];
+export const SEXO_OPCIONES = ['Masculino', 'Femenino'];
 export const SI_NO_OPCIONES = ['Sí', 'No'];
-export const TIPO_CIRUGIA_OPCIONES = ['Le Fort I aislado', 'Bimaxilar', 'Monomaxilar Mandibular', 'Segmentada Superior', 'Compleja Multidisciplinaria', 'Otro'];
+export const TIPO_CIRUGIA_OPCIONES = ['LE FORT 1', 'BIMAXILAR'];
 export const TIPO_OSTEOTOMIA_OPCIONES = ['Clásico', 'Segmentada 2 piezas', 'Segmentada 3 piezas', 'Segmentada 4 piezas', 'No aplica', 'Otro'];
 export const CALIDAD_CBCT_OPCIONES = ['Satisfactoria', 'Óptima', 'Aceptable', 'Deficiente'];
 export const UTILIDAD_RX_OPCIONES = ['Buena', 'Aceptable', 'Deficiente', 'Sí', 'No'];
