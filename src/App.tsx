@@ -459,8 +459,8 @@ export default function App() {
   ];
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-800 flex flex-col font-sans">
-      {/* Minimal Header */}
+    <div className="min-h-screen bg-[#f8fafc] text-slate-800 flex flex-col font-sans selection:bg-[#00b2a9]/20 selection:text-[#008982]">
+      {/* ICOR Clinical Header */}
       <HeaderBar
         currentId={patient.id_paciente}
         patientList={patientList}
@@ -473,18 +473,23 @@ export default function App() {
       />
 
       {/* Main Container */}
-      <main className="flex-1 max-w-5xl w-full mx-auto px-4 py-4 space-y-3.5">
+      <main className="flex-1 max-w-6xl w-full mx-auto px-4 sm:px-6 py-6 space-y-4">
         {/* Lock Status & Audit Trail Bar */}
-        <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2 bg-white border border-slate-200 rounded-xl px-3.5 py-2 text-xs shadow-sm">
-          <div className="flex items-center space-x-2">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 bg-white border border-slate-200/80 rounded-2xl px-4 py-3 text-xs shadow-xs">
+          <div className="flex items-center space-x-2.5">
             {isLocked ? (
-              <span className="flex items-center gap-1.5 font-semibold text-slate-700">
-                <Lock className="w-3.5 h-3.5 text-slate-500" /> Ficha Auditada (Modo Solo Lectura)
+              <span className="flex items-center gap-2 font-bold text-slate-700">
+                <div className="w-2 h-2 rounded-full bg-slate-400"></div>
+                <Lock className="w-3.5 h-3.5 text-slate-500" />
+                <span>Ficha Auditada y Protegida (Modo Solo Lectura)</span>
               </span>
             ) : (
-              <span className="flex items-center gap-1.5 font-semibold text-emerald-800">
-                <Unlock className="w-3.5 h-3.5 text-emerald-600" /> Edición de Administrador Activa {modificationReason && `• ${modificationReason}`}
-                <span className="text-[10px] font-mono bg-emerald-100 text-emerald-900 px-1.5 py-0.5 rounded border border-emerald-200">
+              <span className="flex items-center gap-2 font-bold text-emerald-800 flex-wrap">
+                <div className="w-2 h-2 rounded-full bg-[#00b2a9] animate-pulse"></div>
+                <Unlock className="w-3.5 h-3.5 text-[#00b2a9]" />
+                <span>Edición de Administrador Habilitada</span>
+                {modificationReason && <span className="font-medium text-slate-600">({modificationReason})</span>}
+                <span className="text-[10px] font-mono bg-teal-50 text-[#008982] px-2 py-0.5 rounded-full border border-teal-200 font-bold">
                   {unlockedScope === 'ALL' ? 'Alcance: Ficha Completa' : `Alcance: Sección ${Number(unlockedScope) + 1}`}
                 </span>
               </span>
@@ -496,9 +501,9 @@ export default function App() {
             <button
               type="button"
               onClick={handleOpenAuditLog}
-              className="flex items-center space-x-1 px-2.5 py-1 text-slate-600 hover:text-slate-900 bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors border border-slate-200 cursor-pointer font-medium"
+              className="flex items-center space-x-1.5 px-3 py-1.5 text-slate-700 hover:text-slate-900 bg-slate-50 hover:bg-slate-100 rounded-xl transition-all border border-slate-200 cursor-pointer font-semibold"
             >
-              <History className="w-3.5 h-3.5" />
+              <History className="w-3.5 h-3.5 text-[#00b2a9]" />
               <span>Ver Historial</span>
             </button>
 
@@ -507,16 +512,16 @@ export default function App() {
               <button
                 type="button"
                 onClick={() => setIsUnlockModalOpen(true)}
-                className="flex items-center space-x-1.5 px-3 py-1 bg-slate-900 hover:bg-slate-800 text-white rounded-lg transition-all cursor-pointer font-semibold shadow-sm"
+                className="flex items-center space-x-1.5 px-4 py-1.5 bg-[#0f172a] hover:bg-[#1e293b] text-white rounded-xl transition-all cursor-pointer font-bold shadow-sm"
               >
-                <Unlock className="w-3.5 h-3.5 text-amber-400" />
-                <span>Autorizar (Administrador)</span>
+                <Unlock className="w-3.5 h-3.5 text-[#00b2a9]" />
+                <span>Autorizar Administrador</span>
               </button>
             ) : (
               <button
                 type="button"
                 onClick={handleLockFicha}
-                className="flex items-center space-x-1 px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg transition-colors border border-slate-200 cursor-pointer font-medium text-xs"
+                className="flex items-center space-x-1.5 px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl transition-colors border border-slate-200 cursor-pointer font-semibold text-xs"
               >
                 <Lock className="w-3.5 h-3.5" />
                 <span>Bloquear Ficha</span>
@@ -526,7 +531,7 @@ export default function App() {
         </div>
 
         {/* Tab Pills */}
-        <div className="flex overflow-x-auto gap-1 bg-slate-200/70 p-1 rounded-xl scrollbar-none">
+        <div className="flex overflow-x-auto gap-1.5 bg-slate-200/60 p-1.5 rounded-2xl scrollbar-none">
           {tabs.map((tab) => {
             const isActive = activeTab === tab.id;
             const tabLocked = isSectionLocked(tab.id);
@@ -535,19 +540,19 @@ export default function App() {
                 key={tab.id}
                 type="button"
                 onClick={() => setActiveTab(tab.id)}
-                className={`flex-1 min-w-[120px] sm:min-w-0 py-2 px-3 rounded-lg text-xs font-semibold transition-all flex items-center justify-center space-x-1.5 whitespace-nowrap cursor-pointer ${
+                className={`flex-1 min-w-[140px] sm:min-w-0 py-2.5 px-4 rounded-xl text-xs font-bold transition-all flex items-center justify-center space-x-2 whitespace-nowrap cursor-pointer ${
                   isActive
-                    ? 'bg-white text-slate-900 shadow-sm border border-slate-200'
-                    : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/40'
+                    ? 'bg-white text-slate-900 shadow-sm border border-slate-200/80 ring-1 ring-slate-900/5'
+                    : 'text-slate-600 hover:text-slate-900 hover:bg-white/50'
                 }`}
               >
                 <span>{tab.label}</span>
-                {tabLocked && <Lock className="w-2.5 h-2.5 text-slate-400" />}
+                {tabLocked && <Lock className="w-3 h-3 text-slate-400" />}
                 {!tabLocked && tab.isComplete && (
-                  <span className="text-[11px] text-emerald-600 font-bold">✓</span>
+                  <span className="text-[11px] text-[#00b2a9] font-bold">✓</span>
                 )}
                 {!tabLocked && !tab.isComplete && (
-                  <span className="w-1.5 h-1.5 rounded-full bg-slate-400"></span>
+                  <span className="w-1.5 h-1.5 rounded-full bg-slate-300"></span>
                 )}
               </button>
             );
@@ -555,25 +560,25 @@ export default function App() {
         </div>
 
         {/* Content Box */}
-        <div className="bg-white border border-slate-200 rounded-xl p-4 sm:p-5 shadow-sm relative">
+        <div className="bg-white border border-slate-200/80 rounded-3xl p-5 sm:p-7 shadow-xs relative">
           {isLoading && (
-            <div className="py-12 text-center text-xs text-slate-500 flex items-center justify-center gap-2">
-              <div className="w-4 h-4 border-2 border-slate-700 border-t-transparent rounded-full animate-spin"></div>
-              <span>Cargando paciente...</span>
+            <div className="py-16 text-center text-xs text-slate-500 flex flex-col items-center justify-center gap-3">
+              <div className="w-6 h-6 border-2 border-[#00b2a9] border-t-transparent rounded-full animate-spin"></div>
+              <span className="font-semibold text-slate-600">Sincronizando ficha clínica...</span>
             </div>
           )}
 
           {/* Section Locked Banner */}
           {!isLoading && isSectionLocked(activeTab) && (
-            <div className="mb-4 p-3 bg-amber-50 border border-amber-200 rounded-xl text-xs flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 text-amber-900">
-              <div className="flex items-center gap-2">
+            <div className="mb-5 p-4 bg-amber-50/80 border border-amber-200 rounded-2xl text-xs flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-amber-950">
+              <div className="flex items-center gap-2.5">
                 <Lock className="w-4 h-4 text-amber-600 shrink-0" />
-                <span>Esta sección se encuentra <strong>bloqueada en modo solo lectura</strong>. Para editarla, se requiere autorización de Administrador.</span>
+                <span>Esta sección se encuentra <strong>bloqueada en modo solo lectura</strong>. Para realizar modificaciones, se requiere autorización de Administrador.</span>
               </div>
               <button
                 type="button"
                 onClick={() => setIsUnlockModalOpen(true)}
-                className="px-3 py-1 bg-slate-900 text-white rounded-lg font-semibold hover:bg-slate-800 transition-all cursor-pointer text-xs shrink-0"
+                className="px-4 py-1.5 bg-[#0f172a] text-white rounded-xl font-bold hover:bg-[#1e293b] transition-all cursor-pointer text-xs shrink-0 shadow-sm"
               >
                 Autorizar Sección
               </button>
@@ -621,25 +626,25 @@ export default function App() {
           )}
 
           {/* Stepper buttons */}
-          <div className="flex items-center justify-between pt-4 mt-4 border-t border-slate-100">
+          <div className="flex items-center justify-between pt-5 mt-5 border-t border-slate-100">
             <button
               type="button"
               disabled={activeTab === 0}
               onClick={() => setActiveTab((prev) => Math.max(0, prev - 1))}
-              className="px-3 py-1.5 text-xs font-medium rounded-lg bg-slate-100 text-slate-700 hover:bg-slate-200 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
+              className="px-4 py-2 text-xs font-semibold rounded-xl bg-slate-100 text-slate-700 hover:bg-slate-200 disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer transition-all"
             >
               ← Anterior
             </button>
 
-            <span className="text-[11px] font-mono text-slate-400">
-              {activeTab + 1} / {tabs.length}
+            <span className="text-xs font-mono font-bold text-slate-400">
+              Paso {activeTab + 1} de {tabs.length}
             </span>
 
             <button
               type="button"
               disabled={activeTab === tabs.length - 1}
               onClick={() => setActiveTab((prev) => Math.min(tabs.length - 1, prev + 1))}
-              className="px-3 py-1.5 text-xs font-medium rounded-lg bg-slate-100 text-slate-700 hover:bg-slate-200 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
+              className="px-4 py-2 text-xs font-semibold rounded-xl bg-slate-100 text-slate-700 hover:bg-slate-200 disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer transition-all"
             >
               Siguiente →
             </button>
