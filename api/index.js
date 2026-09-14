@@ -187,7 +187,10 @@ async function syncRowToGoogleSheets(patient, auditEntry) {
     return { synced: true, action: rowIndex > 0 ? 'updated' : (patient ? 'appended' : 'audit_logged') };
   } catch (err) {
     console.error('Google Sheets API Error:', err.message);
-    return { synced: false, error: err.message };
+    const keyPreview = process.env.GOOGLE_PRIVATE_KEY
+      ? `${process.env.GOOGLE_PRIVATE_KEY.substring(0, 25)}... (len ${process.env.GOOGLE_PRIVATE_KEY.length})`
+      : 'NO_KEY';
+    return { synced: false, error: err.message, keyPreview };
   }
 }
 
